@@ -26,7 +26,7 @@ const server = http.createServer(app);
  * Synchronize Sequelize models with the database.
  */
 
-db.sequelize.sync().then(() => {
+db.sequelize.sync({ alter: true }).then(() => {
   console.log('Database synchronized');
 
   /**
