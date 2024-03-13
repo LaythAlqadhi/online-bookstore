@@ -7,6 +7,7 @@
 const app = require('../app');
 const debug = require('debug')('node:server');
 const http = require('http');
+const db = require('../models');
 
 /**
  * Get port from environment and store in Express.
@@ -22,12 +23,22 @@ app.set('port', port);
 const server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Synchronize Sequelize models with the database.
  */
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+db.sequelize.sync().then(() => {
+  console.log('Database synchronized');
+
+  /**
+   * Listen on provided port, on all network interfaces.
+   */
+
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+}).catch(error => {
+  console.error('Error synchronizing database:', error);
+});
 
 /**
  * Normalize a port into a number, string, or false.
