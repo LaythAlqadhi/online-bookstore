@@ -7,10 +7,12 @@ const RateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
+const passport = require('./auth/passportConfig');
 
 // Define routes
-const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+const indexRouter = require('./routes/indexRouter');
+const usersRouter = require('./routes/usersRouter');
+const authRouter = require('./routes/authRouter');
 
 // Create Express app
 const app = express();
@@ -27,6 +29,7 @@ const limiter = RateLimit({
 
 // Apply Express middleware
 app.use(limiter);
+app.use(passport.initialize());
 app.use(helmet());
 app.use(compression());
 app.use(logger('dev'));
@@ -39,6 +42,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Define routes
 app.use('/', indexRouter);
 app.use('/v1', usersRouter);
+app.use('/v1', authRouter);
 
 // Catch 404 and forward to error handler
 app.use((req, res, next) => {
