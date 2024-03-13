@@ -4,21 +4,27 @@ const { body, param, validationResult } = require('express-validator');
 const authenticate = require('../auth/authenticate');
 const { User } = require('../models');
 
-exports.getAllUsers = asyncHandler(async (req, res, next) => {
-  const users = await User.findAll({
-    attributes: {
-      exclude: ['password', 'createdAt', 'updatedAt'],
-    },
-  });
+exports.getAllUsers = [
+  authenticate,
+  
+  asyncHandler(async (req, res, next) => {
+    const users = await User.findAll({
+      attributes: {
+        exclude: ['password', 'createdAt', 'updatedAt'],
+      },
+    });
 
-  if (users.length <= 0) {
-    return res.sendStatus(404);
-  }
+    if (users.length <= 0) {
+      return res.sendStatus(404);
+    }
 
-  res.status(200).json({ users });
-});
+    res.status(200).json({ users });
+  }),
+]
 
 exports.getOneUser = [
+  authenticate,
+  
   param('userId').trim().notEmpty().escape(),
   
   asyncHandler(async (req, res, next) => {
@@ -45,6 +51,8 @@ exports.getOneUser = [
 ];
 
 exports.putOneUser = [
+  authenticate,
+  
   param('userId').trim().notEmpty().escape(),
 
   body('name')
@@ -101,6 +109,10 @@ exports.putOneUser = [
       return res.json({ errors: errors.array() });
     }
 
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.sendStatus(403);
+    }
+
     const updatedData = {
       name,
       username,
@@ -119,6 +131,8 @@ exports.putOneUser = [
 ];
 
 exports.deleteOneUser = [
+  authenticate,
+  
   param('userId').trim().notEmpty().escape(),
 
   asyncHandler(async (req, res, next) => {
@@ -127,6 +141,10 @@ exports.deleteOneUser = [
 
     if (!errors.isEmpty()) {
       return res.json({ errors: errors.array() });
+    }
+
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.sendStatus(403);
     }
 
     const rowsDeleted = await User.destroy({
