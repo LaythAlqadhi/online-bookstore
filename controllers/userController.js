@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { body, param, validationResult } = require('express-validator');
 
-const authenticate = require('../auth/authenticate');
+const authenticate = require('../helpers/authenticate');
 const { User } = require('../models');
 
 exports.getAllUsers = [
@@ -18,13 +18,12 @@ exports.getAllUsers = [
       return res.sendStatus(404);
     }
 
-    res.status(200).json({ users });
+    return res.status(200).json({ users });
   }),
 ]
 
 exports.getOneUser = [
   authenticate,
-  
   param('userId').trim().notEmpty().escape(),
   
   asyncHandler(async (req, res, next) => {
@@ -32,7 +31,10 @@ exports.getOneUser = [
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      return res.json({ errors: errors.array() });
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
     }
 
     const user = await User.findOne({
@@ -46,7 +48,7 @@ exports.getOneUser = [
       return res.sendStatus(404);
     }
 
-    res.status(200).json({ user });
+    return res.status(200).json({ user });
   }),
 ];
 
@@ -106,10 +108,13 @@ exports.putOneUser = [
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      return res.json({ errors: errors.array() });
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
     }
 
-    if (req.user.id !== userId && req.user.role !== 'admin') {
+    if (req.user.id != userId && req.user.role !== 'admin') {
       return res.sendStatus(403);
     }
 
@@ -126,7 +131,9 @@ exports.putOneUser = [
       return res.sendStatus(404);
     }
 
-    res.sendStatus(204);
+    return res.status(200).json({
+      message: 'User updated successfully'
+    });
   }),
 ];
 
@@ -140,10 +147,13 @@ exports.deleteOneUser = [
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      return res.json({ errors: errors.array() });
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
     }
 
-    if (req.user.id !== userId && req.user.role !== 'admin') {
+    if (req.user.id != userId && req.user.role !== 'admin') {
       return res.sendStatus(403);
     }
 
@@ -155,6 +165,8 @@ exports.deleteOneUser = [
       return res.sendStatus(404);
     }
 
-    res.sendStatus(204);
+    return res.status(200).json({
+      message: 'User deleted successfully'
+    });
   }),
 ];
