@@ -7,7 +7,6 @@ const RateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
-const passport = require('./auth/passportConfig');
 
 // Define routes
 const indexRouter = require('./routes/indexRouter');
@@ -29,7 +28,6 @@ const limiter = RateLimit({
 
 // Apply Express middleware
 app.use(limiter);
-app.use(passport.initialize());
 app.use(helmet());
 app.use(compression());
 app.use(logger('dev'));

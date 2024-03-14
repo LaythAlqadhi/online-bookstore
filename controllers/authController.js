@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
-const passport = require('passport');
+const bcrypt = require('bcryptjs');
 
 const { User } = require('../models');
 
@@ -56,7 +56,10 @@ exports.postSignUp = [
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      return res.send({ errors: errors.array() });
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
     }
 
     const user = await User.create({
@@ -71,33 +74,92 @@ exports.postSignUp = [
 ];
 
 exports.postSignIn = [
-  body('username').trim().notEmpty().toLowerCase().escape(),
+  body('username')
+    .trim()
+    .notEmpty()
+    .toLowerCase()
+    .escape(),
 
   body('password').trim().notEmpty().escape(),
-
-  (req, res, next) => {
+  
+  asyncHandler(async (req, res, next) => {
+    const { username, password } = req.body;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      return res.send({ errors: errors.array() });
-     }
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
+    }
 
-    next();
-  },
-  
-  passport.authenticate('local', { session: false }),
-  (req, res) => {
-    const token = jwt.sign({ sub: req.user.id }, process.env.JWT_SECRET, {
-      expiresIn: '6h',
+    const user = await User.findOne({
+      where: { username: username, },
     });
 
-    const user = {
-      id: req.user.id,
-      name: req.user.name,
-      username: req.user.username,
-    };
+    if (!user) {
+      res.status(401).json({
+        message: 'Incorrect username',
+      })
+    }
 
-    const payload = { token, user };
-    res.status(200).json({ payload });
-  },
+    const match = await bcrypt.compare(password, user.password);
+    
+    if (!match) {
+      res.status(401).json({
+        message: 'Incorrect password',
+      })
+    }
+
+    const accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: '15m'
+    });
+
+    const refreshToken = jwt.sign({
+      id: user.id,
+      username: user.username,
+    }, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: '30d'
+    });
+
+    res.status(200).json({ accessToken, refreshToken });
+  }),
+];
+
+exports.postRefresh = [
+  body('refreshToken')
+    .trim()
+    .notEmpty()
+    .escape(),
+
+  asyncHandler(async (req, res, next) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token missing' });
+    }
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({
+          message: 'Unauthorized'
+        });
+      }
+
+      const accessToken = jwt.sign(decoded.toJSON(), process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '15m'
+      });
+
+      res.status(200).json({ accessToken });
+    });
+  })
 ];
