@@ -5,10 +5,16 @@ module.exports = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [2, 25],
+      },
     },
     username: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [2, 25],
+      },
       unique: true,
     },
     email: {
@@ -24,6 +30,9 @@ module.exports = (sequelize, DataTypes) => {
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [8],
+      },
       set(value) {
         if (!this.getDataValue('password') || this.getDataValue('password') !== value) {
           const hashedPassword = bcrypt.hashSync(value, 10);
@@ -32,8 +41,8 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     role: {
-      type: DataTypes.ENUM('user', 'admin'),
-      defaultValue: 'user',
+      type: DataTypes.ENUM('User', 'Admin'),
+      defaultValue: 'User',
     },
   });
 

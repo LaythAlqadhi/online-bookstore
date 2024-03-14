@@ -55,7 +55,10 @@ exports.getOneUser = [
 exports.putOneUser = [
   authenticate,
   
-  param('userId').trim().notEmpty().escape(),
+  param('userId')
+    .trim()
+    .notEmpty()
+    .escape(),
 
   body('name')
     .trim()
@@ -114,7 +117,7 @@ exports.putOneUser = [
       });
     }
 
-    if (req.user.id != userId && req.user.role !== 'admin') {
+    if (req.user.id != userId && req.user.role !== 'Admin') {
       return res.sendStatus(403);
     }
 
@@ -140,7 +143,10 @@ exports.putOneUser = [
 exports.deleteOneUser = [
   authenticate,
   
-  param('userId').trim().notEmpty().escape(),
+  param('userId')
+    .trim()
+    .notEmpty()
+    .escape(),
 
   asyncHandler(async (req, res, next) => {
     const { userId } = req.params;
@@ -153,7 +159,7 @@ exports.deleteOneUser = [
       });
     }
 
-    if (req.user.id != userId && req.user.role !== 'admin') {
+    if (req.user.id != userId && req.user.role !== 'Admin') {
       return res.sendStatus(403);
     }
 

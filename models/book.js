@@ -3,10 +3,16 @@ module.exports = (sequelize, DataTypes) => {
     title: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [2, 100],
+      },
     },
     author: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [2, 25],
+      },
     },
     genre: {
       type: DataTypes.ENUM(
@@ -25,6 +31,9 @@ module.exports = (sequelize, DataTypes) => {
     price: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      validate: {
+        min: 0,
+      },
     },
     status: {
       type: DataTypes.ENUM(
