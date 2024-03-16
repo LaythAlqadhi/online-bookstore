@@ -51,9 +51,7 @@ module.exports = (sequelize, DataTypes) => {
     Book.belongsToMany(models.Cart, {
       through: 'CartBook',
     });
-    Book.belongsToMany(models.Order, {
-      through: 'OrderBook',
-    });
+    Book.belongsTo(models.Order);
   };
 
   return Book;

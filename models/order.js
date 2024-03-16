@@ -36,14 +36,12 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Order.associate = (models) => {
-    Order.belongsTo(models.User, {
+    Order.belongsTo(models.User);
+    Order.hasMany(models.Book, {
       foreignKey: {
         type: DataTypes.UUID,
         allowNull: false,
       },
-    });
-    Order.belongsToMany(models.Book, { 
-      through: 'OrderBook',
     });
   };
 
