@@ -8,10 +8,10 @@ const { Book } = require('../models');
 exports.getBooksBySearch = [
   authenticate,
 
-  query('query').trim().escape(),
+  query('q').optional().isString().trim().escape(),
 
   asyncHandler(async (req, res, next) => {
-    const { query } = req.query;
+    const { q } = req.query;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -21,15 +21,15 @@ exports.getBooksBySearch = [
       });
     }
 
-    if (query === '') {
+    if (q === '') {
       return res.status(200).json({ books: [] });
     }
 
     const books = await Book.findAll({
       where: {
         [Op.or]: [
-          { title: { [Op.iLike]: `%${query}%` } },
-          { author: { [Op.iLike]: `%${query}%` } }
+          { title: { [Op.iLike]: `%${q}%` } },
+          { author: { [Op.iLike]: `%${q}%` } },
         ],
       },
     });
@@ -41,26 +41,14 @@ exports.getBooksBySearch = [
 exports.getBooksByFilter = [
   authenticate,
 
-  query('genre')
-    .optional()
-    .trim()
-    .escape(),
+  query('genre').optional().isString().trim().escape(),
 
-  query('status')
-    .optional()
-    .trim()
-    .escape(),
+  query('status').optional().isString().trim().escape(),
 
-  query('maxPrice')
-    .optional()
-    .trim()
-    .escape(),
+  query('maxPrice').optional().isString().trim().escape(),
 
-  query('minPrice')
-    .optional()
-    .trim()
-    .escape(),
-  
+  query('minPrice').optional().isString().trim().escape(),
+
   asyncHandler(async (req, res, next) => {
     const { genre, status, maxPrice, minPrice } = req.query;
     const errors = validationResult(req);
@@ -87,15 +75,13 @@ exports.getBooksByFilter = [
       whereClause.price = { [Op.gte]: parseInt(minPrice) };
     }
 
-    const books = await Book.findAll({
-      where: whereClause
-    });
+    const books = await Book.findAll({ where: whereClause });
 
     return res.status(200).json({ books });
   }),
 ];
 
-exports.getAllBooks = [
+exports.getBooks = [
   authenticate,
 
   asyncHandler(async (req, res, next) => {
@@ -109,8 +95,9 @@ exports.getAllBooks = [
   }),
 ];
 
-exports.getOneBook = [
+exports.getBook = [
   authenticate,
+
   param('bookId').trim().notEmpty().escape(),
 
   asyncHandler(async (req, res, next) => {
@@ -124,25 +111,23 @@ exports.getOneBook = [
       });
     }
 
-    const book = await Book.findOne({
-      where: { id: bookId },
-      attributes: {
-        exclude: ['password', 'createdAt', 'updatedAt'],
-      },
-    });
+    const book = await Book.findOne({ where: { id: bookId } });
 
     if (!book) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'Book not found',
+      });
     }
 
     return res.status(200).json({ book });
   }),
 ];
 
-exports.postOneBook = [
+exports.postBook = [
   authenticate,
 
   body('title')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Title must not be less than 2 characters.')
@@ -151,14 +136,7 @@ exports.postOneBook = [
     .escape(),
 
   body('author')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Author name must not be less than 2 characters.')
-    .isLength({ max: 25 })
-    .withMessage('Author name must not be greater than 25 characters.')
-    .escape(),
-
-  body('author')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Author name must not be less than 2 characters.')
@@ -167,32 +145,33 @@ exports.postOneBook = [
     .escape(),
 
   body('genre')
+    .isString()
     .trim()
     .notEmpty()
-    .isIn(['Mystery', 'Science', 'Fantasy', 'Historical', 'Romance', 'Horror', 'Business', 'Travel', 'Other'])
+    .isIn([
+      'Mystery',
+      'Science',
+      'Fantasy',
+      'Historical',
+      'Romance',
+      'Horror',
+      'Business',
+      'Travel',
+      'Other',
+    ])
     .escape(),
 
-  body('price')
-    .trim()
-    .notEmpty()
-    .isNumeric()
-    .escape(),
+  body('price').isNumeric().trim().notEmpty().escape(),
 
   body('status')
+    .isString()
     .trim()
     .notEmpty()
     .isIn(['Available', 'Borrowed', 'Out of Stock'])
     .escape(),
 
   asyncHandler(async (req, res, next) => {
-    const { bookId } = req.params;
-    const {
-      title,
-      author,
-      genre,
-      price,
-      status,
-    } = req.body;
+    const { title, author, genre, price, status } = req.body;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -206,13 +185,7 @@ exports.postOneBook = [
       return res.sendStatus(403);
     }
 
-    const newData = {
-      title,
-      author,
-      genre,
-      price,
-      status,
-    }
+    const newData = { title, author, genre, price, status };
 
     const book = await Book.create(newData);
 
@@ -220,15 +193,13 @@ exports.postOneBook = [
   }),
 ];
 
-exports.putOneBook = [
+exports.putBook = [
   authenticate,
 
-  param('bookId')
-    .trim()
-    .notEmpty()
-    .escape(),
+  param('bookId').isString().trim().notEmpty().escape(),
 
   body('title')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Title must not be less than 2 characters.')
@@ -237,14 +208,7 @@ exports.putOneBook = [
     .escape(),
 
   body('author')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Author name must not be less than 2 characters.')
-    .isLength({ max: 25 })
-    .withMessage('Author name must not be greater than 25 characters.')
-    .escape(),
-
-  body('author')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Author name must not be less than 2 characters.')
@@ -253,18 +217,26 @@ exports.putOneBook = [
     .escape(),
 
   body('genre')
+    .isString()
     .trim()
     .notEmpty()
-    .isIn(['Mystery', 'Science', 'Fantasy', 'Historical', 'Romance', 'Horror', 'Business', 'Travel', 'Other'])
+    .isIn([
+      'Mystery',
+      'Science',
+      'Fantasy',
+      'Historical',
+      'Romance',
+      'Horror',
+      'Business',
+      'Travel',
+      'Other',
+    ])
     .escape(),
 
-  body('price')
-    .trim()
-    .notEmpty()
-    .isNumeric()
-    .escape(),
+  body('price').isNumeric().trim().notEmpty().escape(),
 
   body('status')
+    .isString()
     .trim()
     .notEmpty()
     .isIn(['Available', 'Borrowed', 'Out of Stock'])
@@ -272,13 +244,7 @@ exports.putOneBook = [
 
   asyncHandler(async (req, res, next) => {
     const { bookId } = req.params;
-    const {
-      title,
-      author,
-      genre,
-      price,
-      status,
-    } = req.body;
+    const { title, author, genre, price, status } = req.body;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -292,30 +258,28 @@ exports.putOneBook = [
       return res.sendStatus(403);
     }
 
-    const updatedData = {
-      title,
-      author,
-      genre,
-      price,
-      status,
-    }
+    const updatedData = { title, author, genre, price, status };
 
-    const [rowsUpdated] = await Book.update(updatedData, { where: { id: bookId } });
+    const [rowsUpdated] = await Book.update(updatedData, {
+      where: { id: bookId },
+    });
 
     if (!rowsUpdated) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'Book not found',
+      });
     }
 
     return res.status(200).json({
-      message: 'Book updated successfully'
+      message: 'Book updated successfully',
     });
   }),
 ];
 
-exports.deleteOneBook = [
+exports.deleteBook = [
   authenticate,
 
-  param('bookId').trim().notEmpty().escape(),
+  param('bookId').isString().trim().notEmpty().escape(),
 
   asyncHandler(async (req, res, next) => {
     const { bookId } = req.params;
@@ -337,11 +301,13 @@ exports.deleteOneBook = [
     });
 
     if (!rowsDeleted) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'Book not found',
+      });
     }
 
     return res.status(200).json({
-      message: 'Book deleted successfully'
+      message: 'Book deleted successfully',
     });
   }),
 ];

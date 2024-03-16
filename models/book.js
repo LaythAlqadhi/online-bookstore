@@ -1,11 +1,17 @@
 module.exports = (sequelize, DataTypes) => {
   const Book = sequelize.define('Book', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
         len: [2, 100],
       },
+      unique: true,
     },
     author: {
       type: DataTypes.STRING,
@@ -36,17 +42,18 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     status: {
-      type: DataTypes.ENUM(
-        'Available',
-        'Borrowed',
-        'Out of Stock'
-      ),
+      type: DataTypes.ENUM('Available', 'Borrowed', 'Out of Stock'),
       defaultValue: 'Available',
-    }
+    },
   });
-  
+
   Book.associate = (models) => {
-    Book.belongsToMany(models.User, { through: models.Cart });
+    Book.belongsToMany(models.Cart, {
+      through: 'CartBook',
+    });
+    Book.belongsToMany(models.Order, {
+      through: 'OrderBook',
+    });
   };
 
   return Book;

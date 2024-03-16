@@ -7,14 +7,14 @@ router.get('/books/search', bookController.getBooksBySearch);
 
 router.get('/books/filter', bookController.getBooksByFilter);
 
-router.get('/books', bookController.getAllBooks);
+router.get('/books', bookController.getBooks);
 
-router.get('/books/:bookId', bookController.getOneBook);
+router.get('/books/:bookId', bookController.getBook);
 
-router.post('/books', bookController.postOneBook);
+router.post('/books', bookController.postBook);
 
-router.put('/books/:bookId', bookController.putOneBook);
+router.put('/books/:bookId', bookController.putBook);
 
-router.delete('/books/:bookId', bookController.deleteOneBook);
+router.delete('/books/:bookId', bookController.deleteBook);
 
 module.exports = router;

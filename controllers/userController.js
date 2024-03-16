@@ -2,30 +2,43 @@ const asyncHandler = require('express-async-handler');
 const { body, param, validationResult } = require('express-validator');
 
 const authenticate = require('../helpers/authenticate');
-const { User } = require('../models');
+const { User, Cart, Order } = require('../models');
 
-exports.getAllUsers = [
+exports.getUsers = [
   authenticate,
-  
+
   asyncHandler(async (req, res, next) => {
     const users = await User.findAll({
       attributes: {
         exclude: ['password', 'createdAt', 'updatedAt'],
       },
+      include: [
+        {
+          model: Cart,
+          attributes: ['id'],
+        },
+        {
+          model: Order,
+          attributes: ['id'],
+        },
+      ],
     });
 
     if (users.length <= 0) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'Users not found',
+      });
     }
 
     return res.status(200).json({ users });
   }),
-]
+];
 
-exports.getOneUser = [
+exports.getUser = [
   authenticate,
-  param('userId').trim().notEmpty().escape(),
-  
+
+  param('userId').isString().trim().notEmpty().escape(),
+
   asyncHandler(async (req, res, next) => {
     const { userId } = req.params;
     const errors = validationResult(req);
@@ -42,25 +55,35 @@ exports.getOneUser = [
       attributes: {
         exclude: ['password', 'createdAt', 'updatedAt'],
       },
+      include: [
+        {
+          model: Cart,
+          attributes: ['id'],
+        },
+        {
+          model: Order,
+          attributes: ['id'],
+        },
+      ],
     });
 
     if (!user) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'User not found',
+      });
     }
 
     return res.status(200).json({ user });
   }),
 ];
 
-exports.putOneUser = [
+exports.putUser = [
   authenticate,
-  
-  param('userId')
-    .trim()
-    .notEmpty()
-    .escape(),
+
+  param('userId').isString().trim().notEmpty().escape(),
 
   body('name')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Name must not be less than 2 characters.')
@@ -69,6 +92,7 @@ exports.putOneUser = [
     .escape(),
 
   body('username')
+    .isString()
     .trim()
     .isLength({ min: 2 })
     .withMessage('Username must not be less than 2 characters.')
@@ -78,6 +102,7 @@ exports.putOneUser = [
     .escape(),
 
   body('email')
+    .isString()
     .trim()
     .notEmpty()
     .withMessage('Email must not be empty.')
@@ -87,6 +112,7 @@ exports.putOneUser = [
     .escape(),
 
   body('password')
+    .isString()
     .notEmpty()
     .withMessage('Password must not be empty.')
     .isStrongPassword()
@@ -94,62 +120,16 @@ exports.putOneUser = [
     .escape(),
 
   body('passwordConfirmation')
+    .isString()
     .notEmpty()
     .withMessage('Password Confirmation must not be empty.')
-    .escape()
     .custom((value, { req }) => value === req.body.password)
-    .withMessage('Password does not match.'),
-
-  asyncHandler(async (req, res, next) => {
-    const { userId } = req.params;
-    const {
-      name,
-      username,
-      email,
-      password,
-    } = req.body;
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      return res.status(422).json({
-        message: 'Invalid input',
-        errors: errors.array(),
-      });
-    }
-
-    if (req.user.id != userId && req.user.role !== 'Admin') {
-      return res.sendStatus(403);
-    }
-
-    const updatedData = {
-      name,
-      username,
-      email,
-      password,
-    }
-
-    const [rowsUpdated] = await User.update(updatedData, { where: { id: userId } });
-
-    if (!rowsUpdated) {
-      return res.sendStatus(404);
-    }
-
-    return res.status(200).json({
-      message: 'User updated successfully'
-    });
-  }),
-];
-
-exports.deleteOneUser = [
-  authenticate,
-  
-  param('userId')
-    .trim()
-    .notEmpty()
+    .withMessage('Password does not match.')
     .escape(),
 
   asyncHandler(async (req, res, next) => {
     const { userId } = req.params;
+    const { name, username, email, password } = req.body;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -159,7 +139,45 @@ exports.deleteOneUser = [
       });
     }
 
-    if (req.user.id != userId && req.user.role !== 'Admin') {
+    if (req.user.id !== userId && req.user.role !== 'Admin') {
+      return res.sendStatus(403);
+    }
+
+    const updatedData = { name, username, email, password };
+
+    const [rowsUpdated] = await User.update(updatedData, {
+      where: { id: userId },
+    });
+
+    if (!rowsUpdated) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'User updated successfully',
+    });
+  }),
+];
+
+exports.deleteUser = [
+  authenticate,
+
+  param('userId').isString().trim().notEmpty().escape(),
+
+  asyncHandler(async (req, res, next) => {
+    const { userId } = req.params;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Invalid input',
+        errors: errors.array(),
+      });
+    }
+
+    if (req.user.id !== userId && req.user.role !== 'Admin') {
       return res.sendStatus(403);
     }
 
@@ -168,11 +186,13 @@ exports.deleteOneUser = [
     });
 
     if (!rowsDeleted) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        message: 'User not found',
+      });
     }
 
     return res.status(200).json({
-      message: 'User deleted successfully'
+      message: 'User deleted successfully',
     });
   }),
 ];

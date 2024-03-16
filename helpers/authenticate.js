@@ -9,7 +9,7 @@ const authenticate = [
 
     if (!authorization) {
       return res.status(401).json({
-        message: 'Access token is missing'
+        message: 'Access token is missing',
       });
     }
 
@@ -18,10 +18,10 @@ const authenticate = [
     jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         return res.status(403).json({
-          message: 'Access token is invalid'
+          message: 'Access token is invalid',
         });
       }
-      
+
       req.user = decoded;
       next();
     });
